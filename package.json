@@ -1,0 +1,20 @@
+{
+  "name": "heptex",
+  "version": "1.0.1",
+  "description": "Scrape Inspire, ADS and the arXiv for citation data.",
+  "main": "./bin/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Nathan Moynihan <nathantmoynihan@gmail.com> (http://nmoynihan.com)",
+  "license": "ISC",
+  "bin": {
+    "heptex": "./bin/index.js"
+  },
+  "dependencies": {
+    "axios": "^0.22.0",
+    "cheerio": "^1.0.0-rc.10",
+    "line-reader": "^0.4.0",
+    "yargs": "^17.2.1"
+  }
+}
