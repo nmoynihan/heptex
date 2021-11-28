@@ -135,7 +135,7 @@ function getCitations()
       }
 }
 getCitations();
-// For debug. Uncomment to see it in action.
+// For debug. Uncomment to see it in action. Last one should return nothing.
 //getADSCitation("2016PhRvL.116f1102A").then((message) => console.log(message)).catch((error) => console.log(error));
 //getInspireCitation("Emond:2020lwi").then((message) => console.log(message)).catch((error) => console.log(error));
 //getInspireCitation("34oiufho34ih").then((message) => console.log(message)).catch((error) => console.log(error));
