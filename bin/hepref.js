@@ -2,7 +2,8 @@
 
 // This package is a node knockoff of filltex (python, https://github.com/dgerosa/filltex). It essentially performs the same job, but in node.js.
 // Author: Nathan Moynihan, nathantmoynihan@gmail.com. Please feel free to email me with bugs or praise.
-
+// Level 1: Minimal debug. Level 2: Maximal debug. Level 0: Nothing.
+const debug = 1;
 // Requirements
 const yargs = require("yargs");
 const axios = require("axios");
@@ -19,7 +20,7 @@ const options = yargs
 
 const input = `TeX File: ${options.texfile}, BiB: ${options.bibfile}`;
 
-console.log(input);
+if (debug == 1) { console.log(input); }
 
 // Get a single citation from inspirehep.net
 function getInspireCitation(citeRef)
@@ -85,36 +86,58 @@ function getCitations()
             if (auxCite != null)
             {
                 var key = auxCite.toString().match(/{(.*?)}/)[1]; // Extract the key from the line
-                keys.push(key); // Add to the aux key array
+                keyArray = key.split(",");
+                if (keyArray.length > 1)
+                {
+                    for(var i=0; i<keyArray.length; i++){
+                        if (debug == 2) { console.log("Found a citation with key " + keyArray[i]); }
+                        keys.push(keyArray[i]);
+                    }
+                }
+                else
+                {
+                    if (debug == 2) { console.log("Found a citation with key " + key); }
+                    keys.push(key); // Add to the aux key array. Split in case it's a multi-citation.
+                }
             }
             if (last) // Reached the end of the aux file
             {
+                if (debug == 1 || debug == 2) { console.log("Found " + keys.length + " citations in the aux file.")}
                 lineReader.eachLine(options.bibfile, function(line, last) { // Read each line of the bib file that matches a citation
-                    var bibCite = line.toString().match(/@.*?\{(.*)/g);
+                    var bibCite = line.toString().match(/@.*?\{(.*)/g); // Regex to match @ at the begining 
                     if (bibCite != null)
                     {
-                        var bibkey = bibCite.toString().match(/{(.*?),/)[1];  // Extract the key from the line
-                        bibkeys.push(bibkey); // Add to the bib key array
+                        var bibkey = bibCite.toString().match(/{(.*?),/);  // Extract the key from the line
+                        if (bibkey != null)
+                        {
+                            if (debug == 2) { console.log("Found a key in the .bib: " + bibkey[1])}
+                            bibkeys.push(bibkey[1]); // Add to the bib key array
+                        }
                     }
                     if (last)
                     {
+                        if (debug == 1 || debug == 2) { console.log("Found " + bibkeys.length + " keys in the .bib file.")}
                         let keysDifference = keys
                                             .filter(x => !bibkeys.includes(x))
                                             .concat(bibkeys.filter(x => !keys.includes(x))); // Get the difference between the two arrays - these are the missing keys we need to get!
                         if (keysDifference.length > 0)
                         {
-                            console.log(`Found missing keys: ${keysDifference.toString()}`);
+                            if (debug == 2) { console.log(`Found missing keys: ${keysDifference.toString()}`); }
+                            if (debug == 1 || debug == 2) { console.log("Found " + keysDifference.length + " missing keys in total."); }
                         }
                         else
                         {
                             console.log(`No missing keys found. Doing nothing!`);
                         }
                         for (var i = 0; i < keysDifference.length; i++) { // Go through the array and download all the bibtex
+                            var bibStream = fs.createWriteStream(options.bibfile, {flags:'a'}); // open the bibfile for writing
+                            if (i == 0){ bibStream.write("\n"); }
                             keyName = keysDifference[i];
-                            console.log(`Saveing bibtex for key ${keyName} to ${options.bibfile}.`);
+                            if (debug == 2) { console.log(`Saveing bibtex for key ${keyName} to ${options.bibfile}.`); }
                             if (isNaN(keyName.charAt(0)) == true) // If the first character of the key is NOT a number, it's probably an Inspire key. If it is a number, likely ADS.
                             {
-                                    getInspireCitation(keysDifference[i]).then((message) => fs.appendFile(options.bibfile, message, function (err) { // It's an inspite citation, so download it and write to the bib file.
+                                    //getInspireCitation(keysDifference[i]).then((message) => fs.appendFile(options.bibfile, message, function (err) { // It's an inspite citation, so download it and write to the bib file.
+                                    getInspireCitation(keysDifference[i]).then((message) => bibStream.write(message, function (err) { // It's an inspite citation, so download it and write to the bib file.
                                         if (err) throw err;
                                     })).catch((error) => console.log(error));
                             }
@@ -135,7 +158,9 @@ function getCitations()
       }
 }
 getCitations();
+//bibStream.end(); // Close the bib file
 // For debug. Uncomment to see it in action. Last one should return nothing.
 //getADSCitation("2016PhRvL.116f1102A").then((message) => console.log(message)).catch((error) => console.log(error));
+//getADSCitation("PhysRevLett.22.666").then((message) => console.log(message)).catch((error) => console.log(error));
 //getInspireCitation("Emond:2020lwi").then((message) => console.log(message)).catch((error) => console.log(error));
 //getInspireCitation("34oiufho34ih").then((message) => console.log(message)).catch((error) => console.log(error));
